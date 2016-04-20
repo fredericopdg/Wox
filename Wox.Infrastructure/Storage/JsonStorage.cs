@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Reflection;
 using System.Threading;
 using Newtonsoft.Json;
 
@@ -7,44 +8,85 @@ namespace Wox.Infrastructure.Storage
     /// <summary>
     /// Serialize object using json format.
     /// </summary>
-    public abstract class JsonStrorage<T> : BaseStorage<T> where T : class, IStorage, new()
+    public class  JsonStrorage<T> where T: new()
     {
-        private static object syncObject = new object();
-        protected override string FileSuffix
+        private T _data;
+        internal JsonStrorage()
         {
-            get { return ".json"; }
+            FileName = typeof(T).Name;
+            DirectoryPath = Path.Combine(WoxDirectroy.Executable, DirectoryName);
+            FilePath = Path.Combine(DirectoryPath, FileName + FileSuffix);
         }
 
-        protected override void LoadInternal()
+        protected string FileName { get; set; }
+        protected string FilePath { get; set; }
+        protected const string FileSuffix = ".json";
+        protected string DirectoryPath { get; set; }
+        protected const string DirectoryName = "Config";
+
+        public T Load()
         {
-            string json = File.ReadAllText(FilePath);
-            if (!string.IsNullOrEmpty(json))
+            CheckPath();
+            _data = Deserializa();
+            return _data;
+        }
+
+        private T Deserializa()
+        {
+            T json;
+            string jsonString = File.ReadAllText(FilePath);
+            if (!string.IsNullOrEmpty(jsonString))
             {
                 try
                 {
-                    serializedObject = JsonConvert.DeserializeObject<T>(json);
+                    json = JsonConvert.DeserializeObject<T>(jsonString);
                 }
                 catch (System.Exception)
                 {
-                    serializedObject = LoadDefault();
+                    //serializedObject = LoadDefault();
+                    json = new T();
                 }
             }
             else
             {
-                serializedObject = LoadDefault();
+                //serializedObject = LoadDefault();
+                json = new T();
+            }
+            // happlebao todo
+            //OnAfterLoad();
+            return json;
+        }
+
+        private void CheckPath()
+        {
+            if (!File.Exists(FilePath))
+            {
+                if (!Directory.Exists(DirectoryPath))
+                {
+                    Directory.CreateDirectory(DirectoryPath);
+                }
+                File.Create(FilePath).Close();
             }
         }
 
-        protected override void SaveInternal()
+        public void Save()
         {
             ThreadPool.QueueUserWorkItem(o =>
             {
-                lock (syncObject)
-                {
-                    string json = JsonConvert.SerializeObject(serializedObject, Formatting.Indented);
-                    File.WriteAllText(FilePath, json);
-                }
+                string jsonString = JsonConvert.SerializeObject(_data, Formatting.Indented);
+                File.WriteAllText(FilePath, jsonString);
             });
+        }
+
+        private void Populate(T target, T input)
+        {
+            var type = typeof(T);
+            var filds = type.GetFields(BindingFlags.Public);
+            foreach (var fild in filds)
+            {
+                var value = fild.GetValue(input);
+                fild.SetValue(target, value);
+            }
         }
     }
 }

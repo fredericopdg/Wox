@@ -7,7 +7,7 @@ using Wox.Infrastructure.Storage;
 namespace Wox.Plugin.Program
 {
     [Serializable]
-    public class ProgramStorage : JsonStrorage<ProgramStorage>
+    public class Settings
     {
         [JsonProperty]
         public List<ProgramSource> ProgramSources { get; set; }
@@ -24,7 +24,7 @@ namespace Wox.Plugin.Program
         [DefaultValue(true)]
         public bool EnableRegistrySource { get; set; }
 
-        protected override ProgramStorage LoadDefault()
+        protected Settings LoadDefault()
         {
             ProgramSources = new List<ProgramSource>();
             EnableStartMenuSource = true;
@@ -32,14 +32,13 @@ namespace Wox.Plugin.Program
             return this;
         }
 
-        protected override void OnAfterLoad(ProgramStorage storage)
+        protected void OnAfterLoad()
         {
-            if (storage.ProgramSuffixes == null || storage.ProgramSuffixes.Length == 0)
+            if (ProgramSuffixes == null || ProgramSuffixes.Length == 0)
             {
-                storage.ProgramSuffixes = new[] {"bat", "appref-ms", "exe", "lnk"};
+                ProgramSuffixes = new[] {"bat", "appref-ms", "exe", "lnk"};
             }
         }
 
-        protected override string FileName { get; } = "settings_plugin_program";
     }
 }

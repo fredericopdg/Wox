@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Runtime.Serialization.Formatters;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading;
+using Wox.Infrastructure.Exception;
 using Wox.Infrastructure.Logger;
 
 namespace Wox.Infrastructure.Storage
@@ -16,7 +17,6 @@ namespace Wox.Infrastructure.Storage
     [Serializable]
     public abstract class BinaryStorage<T> : BaseStorage<T> where T : class, IStorage, new()
     {
-        private static object syncObject = new object();
         protected override string FileSuffix
         {
             get { return ".dat"; }
@@ -39,24 +39,24 @@ namespace Wox.Infrastructure.Storage
                         serializedObject = binaryFormatter.Deserialize(fileStream) as T;
                         if (serializedObject == null)
                         {
-                            serializedObject = LoadDefault();
+                            //serializedObject = LoadDefault();
 #if (DEBUG)
                             {
-                                throw new System.Exception("deserialize failed");
+                                throw new WoxException("deserialize failed");
                             }
 #endif
                         }
                     }
                     else
                     {
-                        serializedObject = LoadDefault();
+                        //serializedObject = LoadDefault();
                     }
                 }
             }
             catch (System.Exception e)
             {
                 Log.Error(e);
-                serializedObject = LoadDefault();
+                //serializedObject = LoadDefault();
 #if (DEBUG)
                 {
                     throw;
@@ -89,27 +89,24 @@ namespace Wox.Infrastructure.Storage
         {
             ThreadPool.QueueUserWorkItem(o =>
             {
-                lock (syncObject)
+                try
                 {
-                    try
+                    FileStream fileStream = new FileStream(FilePath, FileMode.Create);
+                    BinaryFormatter binaryFormatter = new BinaryFormatter
                     {
-                        FileStream fileStream = new FileStream(FilePath, FileMode.Create);
-                        BinaryFormatter binaryFormatter = new BinaryFormatter
-                        {
-                            AssemblyFormat = FormatterAssemblyStyle.Simple
-                        };
-                        binaryFormatter.Serialize(fileStream, serializedObject);
-                        fileStream.Close();
-                    }
-                    catch (System.Exception e)
-                    {
-                        Log.Error(e);
+                        AssemblyFormat = FormatterAssemblyStyle.Simple
+                    };
+                    binaryFormatter.Serialize(fileStream, serializedObject);
+                    fileStream.Close();
+                }
+                catch (System.Exception e)
+                {
+                    Log.Error(e);
 #if (DEBUG)
-                        {
-                            throw;
-                        }
-#endif
+                    {
+                        throw;
                     }
+#endif
                 }
             });
         }

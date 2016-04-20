@@ -7,6 +7,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.ServiceProcess;
 using System.Windows;
+using Wox.Infrastructure.Storage;
 using Wox.Plugin.Everything.Everything;
 
 namespace Wox.Plugin.Everything
@@ -17,7 +18,20 @@ namespace Wox.Plugin.Everything
         private readonly EverythingAPI _api = new EverythingAPI();
         private static readonly List<string> ImageExts = new List<string> { ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", ".ico" };
         private static readonly List<string> ExecutableExts = new List<string> { ".exe" };
-        private ContextMenuStorage _settings = ContextMenuStorage.Instance;
+
+        private readonly Settings _settings;
+        private readonly PluginSettingsStorage<Settings> _storage;
+
+        public Main()
+        {
+            _storage = new PluginSettingsStorage<Settings>();
+            _settings = _storage.Load();
+        }
+
+        ~Main()
+        {
+            _storage.Save();
+        }
 
         public List<Result> Query(Query query)
         {
@@ -28,7 +42,6 @@ namespace Wox.Plugin.Everything
                 if (_settings.MaxSearchCount <= 0)
                 {
                     _settings.MaxSearchCount = 50;
-                    _settings.Save();
                 }
 
                 if (keyword == "uninstalleverything")
@@ -155,7 +168,6 @@ namespace Wox.Plugin.Everything
         public void Init(PluginInitContext context)
         {
             _context = context;
-            _settings.API = context.API;
 
             LoadLibrary(Path.Combine(
                 Path.Combine(context.CurrentPluginMetadata.PluginDirectory, (IntPtr.Size == 4) ? "x86" : "x64"),

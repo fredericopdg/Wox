@@ -5,10 +5,10 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Windows;
 using System.Windows.Controls;
 using Wox.Infrastructure;
 using Wox.Infrastructure.Logger;
+using Wox.Infrastructure.Storage;
 using Wox.Plugin.Program.ProgramSources;
 using Stopwatch = Wox.Infrastructure.Stopwatch;
 
@@ -27,8 +27,21 @@ namespace Wox.Plugin.Program
             {"AppPathsProgramSource", typeof(AppPathsProgramSource)}
         };
         private PluginInitContext _context;
-        private static ProgramCacheStorage _cache = ProgramCacheStorage.Instance;
-        private static ProgramStorage _settings = ProgramStorage.Instance;
+        private static ProgramCacheStorage _cache = new ProgramCacheStorage();
+
+        private static Settings _settings ;
+        private readonly PluginSettingsStorage<Settings> _storage;
+
+        public Programs()
+        {
+            _storage = new PluginSettingsStorage<Settings>();
+            _settings = _storage.Load();
+        }
+
+        ~Programs()
+        {
+            _storage.Save();
+        }
 
         public List<Result> Query(Query query)
         {
@@ -62,15 +75,13 @@ namespace Wox.Plugin.Program
 
         public void Init(PluginInitContext context)
         {
-            this._context = context;
+            _context = context;
             Stopwatch.Debug("Preload programs", () =>
             {
                 programs = _cache.Programs;
             });
             Log.Info($"Preload {programs.Count} programs from cache");
-            // happlebao todo fix this
-            //Stopwatch.Debug("Program Index", IndexPrograms);
-            IndexPrograms();
+            Stopwatch.Debug("Program Index", IndexPrograms);
         }
 
         public static void IndexPrograms()

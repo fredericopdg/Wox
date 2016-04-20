@@ -9,8 +9,9 @@ using Newtonsoft.Json;
 
 namespace Wox.Core.UserSettings
 {
-    public class UserSettingStorage : JsonStrorage<UserSettingStorage>
+    public class UserSettings
     {
+        
         public bool DontPromptUpdateMsg { get; set; }
 
         public int ActivateTimes { get; set; }
@@ -77,18 +78,16 @@ namespace Wox.Core.UserSettings
 
         public int MaxResultsToShow { get; set; }
 
-        protected override string FileName { get; } = "Settings";
-
         public void IncreaseActivateTimes()
         {
             ActivateTimes++;
             if (ActivateTimes % 15 == 0)
             {
-                Save();
             }
         }
 
-        protected override UserSettingStorage LoadDefault()
+        // happlebao todo
+        protected UserSettings LoadDefault()
         {
             DontPromptUpdateMsg = false;
             Theme = "Dark";
@@ -107,21 +106,21 @@ namespace Wox.Core.UserSettings
             return this;
         }
 
-        protected override void OnAfterLoad(UserSettingStorage storage)
+        public void OnAfterLoad()
         {
             var metadatas = PluginManager.AllPlugins.Select(p => p.Metadata);
-            if (storage.CustomizedPluginConfigs == null)
+            if (CustomizedPluginConfigs == null)
             {
                 var configs = new Dictionary<string, CustomizedPluginConfig>();
                 foreach (var metadata in metadatas)
                 {
                     addPluginMetadata(configs, metadata);
                 }
-                storage.CustomizedPluginConfigs = configs;
+                CustomizedPluginConfigs = configs;
             }
             else
             {
-                var configs = storage.CustomizedPluginConfigs;
+                var configs = CustomizedPluginConfigs;
                 foreach (var metadata in metadatas)
                 {
                     if (configs.ContainsKey(metadata.ID))
@@ -141,17 +140,17 @@ namespace Wox.Core.UserSettings
             }
 
 
-            if (storage.QueryBoxFont == null)
+            if (QueryBoxFont == null)
             {
-                storage.QueryBoxFont = FontFamily.GenericSansSerif.Name;
+                QueryBoxFont = FontFamily.GenericSansSerif.Name;
             }
-            if (storage.ResultFont == null)
+            if (ResultFont == null)
             {
-                storage.ResultFont = FontFamily.GenericSansSerif.Name;
+                ResultFont = FontFamily.GenericSansSerif.Name;
             }
-            if (storage.Language == null)
+            if (Language == null)
             {
-                storage.Language = "en";
+                Language = "en";
             }
         }
 
@@ -171,8 +170,8 @@ namespace Wox.Core.UserSettings
         {
             var config = CustomizedPluginConfigs[metadata.ID];
             config.ActionKeywords = metadata.ActionKeywords;
-            Save();
         }
+
     }
 
     public enum OpacityMode

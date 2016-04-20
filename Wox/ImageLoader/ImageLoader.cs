@@ -40,7 +40,7 @@ namespace Wox.ImageLoader
 
         static ImageLoader()
         {
-            _imageCache = ImageCacheStroage.Instance;
+            _imageCache = new ImageCacheStroage();
         }
 
         private static ImageSource GetIcon(string fileName)
